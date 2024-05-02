@@ -23,7 +23,7 @@ bool TableHeap::MarkDelete(const RowId &rid, Txn *txn) {
 /**
  * TODO: Student Implement
  */
-bool TableHeap::UpdateTuple(const Row &row, const RowId &rid, Txn *txn) { return false; }
+bool TableHeap::UpdateTuple(Row &row, const RowId &rid, Txn *txn) { return false; }
 
 /**
  * TODO: Student Implement
@@ -64,9 +64,13 @@ void TableHeap::DeleteTable(page_id_t page_id) {
 /**
  * TODO: Student Implement
  */
-TableIterator TableHeap::Begin(Txn *txn) { return TableIterator(nullptr, RowId(), nullptr); }
+TableIterator TableHeap::Begin(Txn *txn) {
+  return TableIterator(nullptr, RowId(), nullptr);
+}
 
 /**
  * TODO: Student Implement
  */
-TableIterator TableHeap::End() { return TableIterator(nullptr, RowId(), nullptr); }
+TableIterator TableHeap::End() { 
+  return TableIterator(nullptr, RowId(), nullptr);
+}
