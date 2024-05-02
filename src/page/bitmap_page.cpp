@@ -10,7 +10,6 @@ bool BitmapPage<PageSize>::AllocatePage(uint32_t &page_offset) {
   return false;
 }
 
-
 /**
  * TODO: Student Implement
  */
