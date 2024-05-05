@@ -45,9 +45,9 @@ class BitmapPage {
 
  private:
   /** The space occupied by all members of the class should be equal to the PageSize */
-  [[maybe_unused]] uint32_t page_allocated_;
-  [[maybe_unused]] uint32_t next_free_page_;
-  [[maybe_unused]] unsigned char bytes[MAX_CHARS];
+  uint32_t page_allocated_;
+  uint32_t next_free_page_;
+  unsigned char bytes[MAX_CHARS];
 };
 
 #endif  // MINISQL_BITMAP_PAGE_H
