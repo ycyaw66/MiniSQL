@@ -36,9 +36,9 @@ class LRUReplacer : public Replacer {
   size_t Size() override;
 
 private:
-  std::list<frame_id_t> lru_list_;
+  list<frame_id_t> lru_list_;
   size_t lru_list_size_;
-  std::unordered_map<frame_id_t, std::list<frame_id_t>::iterator> lru_list_iter_;
+  unordered_map<frame_id_t, list<frame_id_t>::iterator> lru_list_iter_;
 };
 
 #endif  // MINISQL_LRU_REPLACER_H
