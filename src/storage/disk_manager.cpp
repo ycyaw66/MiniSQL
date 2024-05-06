@@ -26,6 +26,13 @@ DiskManager::DiskManager(const std::string &db_file) : file_name_(db_file) {
     }
   }
   ReadPhysicalPage(META_PAGE_ID, meta_data_);
+  meta_page_ = reinterpret_cast<DiskFileMetaPage *>(meta_data_);
+  for (uint32_t i = 0; i < meta_page_->GetExtentNums(); i++) {
+    if (meta_page_->GetExtentUsedPage(i) < BITMAP_SIZE) {
+      next_free_extent_ = i;
+      break;
+    }
+  }
 }
 
 void DiskManager::Close() {
@@ -47,33 +54,62 @@ void DiskManager::WritePage(page_id_t logical_page_id, const char *page_data) {
   WritePhysicalPage(MapPageId(logical_page_id), page_data);
 }
 
-/**
- * TODO: Student Implement
- */
 page_id_t DiskManager::AllocatePage() {
-  ASSERT(false, "Not implemented yet.");
+  while (next_free_extent_ < meta_page_->GetExtentNums()) {
+    if (meta_page_->GetExtentUsedPage(next_free_extent_) < BITMAP_SIZE) {
+      uint32_t page_offset;
+      if (bitmap_page_[next_free_extent_]->AllocatePage(page_offset)) {
+        meta_page_->num_allocated_pages_++;
+        meta_page_->extent_used_page_[next_free_extent_]++;
+        return next_free_extent_ * BITMAP_SIZE + page_offset;
+      }
+    }
+    next_free_extent_++;
+  }
+  if (next_free_extent_ == meta_page_->GetExtentNums()) {
+    meta_page_->num_extents_++;
+    next_free_extent_ = meta_page_->GetExtentNums() - 1;
+    bitmap_page_[next_free_extent_] = new BitmapPage<PAGE_SIZE>();
+    uint32_t page_offset;
+    if (bitmap_page_[next_free_extent_]->AllocatePage(page_offset)) {
+      meta_page_->num_allocated_pages_++;
+      meta_page_->extent_used_page_[next_free_extent_]++;
+      return next_free_extent_ * BITMAP_SIZE + page_offset;
+    }
+  }
   return INVALID_PAGE_ID;
 }
 
-/**
- * TODO: Student Implement
- */
 void DiskManager::DeAllocatePage(page_id_t logical_page_id) {
-  ASSERT(false, "Not implemented yet.");
+  uint32_t extent_id = logical_page_id / BITMAP_SIZE;
+  if (extent_id >= MAX_VALID_EXTENT_ID) {
+    LOG(ERROR) << "Invalid extent id";
+    return;
+  }
+  if (bitmap_page_[extent_id]->DeAllocatePage(logical_page_id % BITMAP_SIZE)) {
+    meta_page_->num_allocated_pages_--;
+    meta_page_->extent_used_page_[extent_id]--;
+    if (extent_id < next_free_extent_) {
+      next_free_extent_ = extent_id;
+    }
+  } else {
+    // LOG(ERROR) << "Deallocate page failed"; 
+  }
 }
 
-/**
- * TODO: Student Implement
- */
 bool DiskManager::IsPageFree(page_id_t logical_page_id) {
-  return false;
+  uint32_t extent_id = logical_page_id / BITMAP_SIZE;
+  if (extent_id >= MAX_VALID_EXTENT_ID) {
+    LOG(ERROR) << "Invalid extent id";
+    return false;
+  }
+  return bitmap_page_[extent_id]->IsPageFree(logical_page_id % BITMAP_SIZE);
 }
 
-/**
- * TODO: Student Implement
- */
 page_id_t DiskManager::MapPageId(page_id_t logical_page_id) {
-  return 0;
+  page_id_t physical_page_id = 0;
+  physical_page_id = logical_page_id / BITMAP_SIZE + logical_page_id + 2;
+  return physical_page_id;
 }
 
 int DiskManager::GetFileSize(const std::string &file_name) {

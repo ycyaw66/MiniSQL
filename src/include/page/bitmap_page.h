@@ -45,8 +45,8 @@ class BitmapPage {
 
  private:
   /** The space occupied by all members of the class should be equal to the PageSize */
-  uint32_t page_allocated_;
-  uint32_t next_free_page_;
+  uint32_t page_allocated_{0};
+  uint32_t next_free_page_{0};
   unsigned char bytes[MAX_CHARS];
 };
 

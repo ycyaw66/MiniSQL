@@ -6,6 +6,7 @@
 #include "page/bitmap_page.h"
 
 static constexpr page_id_t MAX_VALID_PAGE_ID = (PAGE_SIZE - 8) / 4 * BitmapPage<PAGE_SIZE>::GetMaxSupportedSize();
+static constexpr page_id_t MAX_VALID_EXTENT_ID = (PAGE_SIZE - 8) / 4;
 
 class DiskFileMetaPage {
  public:
@@ -21,9 +22,9 @@ class DiskFileMetaPage {
   }
 
  public:
-  uint32_t num_allocated_pages_{0};
+  uint32_t num_allocated_pages_{0}; // the number of pages that have been allocated
   uint32_t num_extents_{0};  // each extent consists with a bit map and BIT_MAP_SIZE pages
-  uint32_t extent_used_page_[0];
+  uint32_t extent_used_page_[0];// the number of pages that have been used in each extent
 };
 
 #endif  // MINISQL_DISK_FILE_META_PAGE_H
