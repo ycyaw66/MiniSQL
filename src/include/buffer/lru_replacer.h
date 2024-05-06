@@ -37,6 +37,9 @@ class LRUReplacer : public Replacer {
 
 private:
   // add your own private member variables here
+  std::list<frame_id_t> lru_list_;
+  size_t lru_list_size_;
+  std::vector<std::list<frame_id_t>::iterator> lru_list_iter_;
 };
 
 #endif  // MINISQL_LRU_REPLACER_H
