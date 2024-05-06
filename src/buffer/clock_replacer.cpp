@@ -41,7 +41,10 @@ void CLOCKReplacer::Pin(frame_id_t frame_id) {
 }
 
 void CLOCKReplacer::Unpin(frame_id_t frame_id) {
-  if (clock_list_.size() >= clock_list_size_ || clock_list_iter_[frame_id] != clock_list_.end()) {
+  if (clock_list_.size() >= clock_list_size_) {
+    return;
+  }
+  if (clock_list_iter_[frame_id] != clock_list_.end()) {
     return;
   }
 }
