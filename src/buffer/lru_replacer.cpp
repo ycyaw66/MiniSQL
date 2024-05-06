@@ -2,7 +2,6 @@
 
 LRUReplacer::LRUReplacer(size_t num_pages) {
   lru_list_size_ = num_pages;
-  lru_list_iter_.resize(num_pages, lru_list_.end());
 }
 
 LRUReplacer::~LRUReplacer() = default;
@@ -14,19 +13,23 @@ bool LRUReplacer::Victim(frame_id_t *frame_id) {
   }
   *frame_id = lru_list_.back();
   lru_list_.pop_back();
-  lru_list_iter_[*frame_id] = lru_list_.end();
+  auto lru_iter = lru_list_iter_.find(*frame_id);
+  if (lru_iter != lru_list_iter_.end()) {
+    lru_list_iter_.erase(lru_iter);
+  }
   return true;
 }
 
 void LRUReplacer::Pin(frame_id_t frame_id) {
-  if (lru_list_iter_[frame_id] != lru_list_.end()) {
-    lru_list_.erase(lru_list_iter_[frame_id]);
-    lru_list_iter_[frame_id] = lru_list_.end();
+  auto lru_iter = lru_list_iter_.find(frame_id);
+  if (lru_iter != lru_list_iter_.end()) {
+    lru_list_.erase(lru_iter->second);
+    lru_list_iter_.erase(lru_iter);
   }
 }
 
 void LRUReplacer::Unpin(frame_id_t frame_id) {
-  if (lru_list_.size() >= lru_list_size_ || lru_list_iter_[frame_id] != lru_list_.end()) {
+  if (lru_list_.size() >= lru_list_size_ || lru_list_iter_.find(frame_id) != lru_list_iter_.end()) {
     return;
   }
   lru_list_.push_front(frame_id);
