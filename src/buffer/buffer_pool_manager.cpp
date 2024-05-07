@@ -93,12 +93,14 @@ bool BufferPoolManager::DeletePage(page_id_t page_id) {
   if (page_table_.find(page_id) == page_table_.end()) {
     return true;
   }
+
   // 2.   If P exists, but has a non-zero pin-count, return false. Someone is using the page.
   frame_id_t frame_id = page_table_[page_id];
   Page *page = &pages_[frame_id];
   if (page->GetPinCount() != 0) {
     return false;
   }
+  
   // 3.   Otherwise, P can be deleted. Remove P from the page table, reset its metadata and return it to the free list.
   DeallocatePage(page_id);
   page_table_.erase(page_id);
