@@ -39,11 +39,9 @@ class CLOCKReplacer : public Replacer {
   size_t Size() override;
 
  private:
-  list<frame_id_t> clock_list_;
   size_t clock_list_size_;
-  list<frame_id_t>::iterator clock_hand_;
-  vector<list<frame_id_t>::iterator> clock_list_iter_;
-  vector<bool> clock_list_ref_;
+  size_t clock_hand_;
+  vector<pair<bool, bool>> clock_list_;
 };
 
 #endif  // MINISQL_CLOCK_REPLACER_H
