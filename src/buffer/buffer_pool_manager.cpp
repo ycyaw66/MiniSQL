@@ -53,7 +53,6 @@ Page *BufferPoolManager::FetchPage(page_id_t page_id) {
 
   // 4.     Update P's metadata, read in the page content from disk, and then return a pointer to P.
   page->page_id_ = page_id;
-  replacer_->Unpin(frame_id);
   replacer_->Pin(frame_id);
   page->pin_count_ = 1;
   disk_manager_->ReadPage(page_id, page->GetData());
