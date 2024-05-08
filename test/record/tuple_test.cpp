@@ -143,23 +143,24 @@ TEST(TupleTest, ColumnTest) {
 }
 
 TEST(TupleTest, SchemaTest) {
-  // std::vector<Column *> columns = {new Column("id", TypeId::kTypeInt, 0, false, false),
-  //                                  new Column("name", TypeId::kTypeChar, 64, 1, true, false),
-  //                                  new Column("account", TypeId::kTypeFloat, 2, true, false)};
-  // Schema schema(columns);
-  // char buffer[PAGE_SIZE];
-  // memset(buffer, 0, sizeof(buffer));
-  // uint32_t size = schema.SerializeTo(buffer);
-  // Schema *ds = nullptr;
-  // Schema::DeserializeFrom(buffer, ds);
-  // ASSERT_EQ(schema.GetColumnCount(), ds->GetColumnCount());
-  // for (uint32_t i = 0; i < schema.GetColumnCount(); i++) {
-  //   ASSERT_EQ(schema.GetColumn(i)->GetName(), ds->GetColumn(i)->GetName());
-  //   ASSERT_EQ(schema.GetColumn(i)->GetLength(), ds->GetColumn(i)->GetLength());
-  //   ASSERT_EQ(schema.GetColumn(i)->GetTableInd(), ds->GetColumn(i)->GetTableInd());
-  //   ASSERT_EQ(schema.GetColumn(i)->IsNullable(), ds->GetColumn(i)->IsNullable());
-  //   ASSERT_EQ(schema.GetColumn(i)->IsUnique(), ds->GetColumn(i)->IsUnique());
-  //   ASSERT_EQ(schema.GetColumn(i)->GetType(), ds->GetColumn(i)->GetType());
-  // }
-  // delete ds;
+  std::vector<Column *> columns = {new Column("id", TypeId::kTypeInt, 0, false, false),
+                                   new Column("name", TypeId::kTypeChar, 64, 1, true, false),
+                                   new Column("account", TypeId::kTypeFloat, 2, true, false)};
+  Schema schema(columns);
+  char buffer[PAGE_SIZE];
+  memset(buffer, 0, sizeof(buffer));
+  char *p = buffer;
+  p += schema.SerializeTo(p);
+  Schema *ds = nullptr;
+  Schema::DeserializeFrom(buffer, ds);
+  ASSERT_EQ(schema.GetColumnCount(), ds->GetColumnCount());
+  for (uint32_t i = 0; i < schema.GetColumnCount(); i++) {
+    ASSERT_EQ(schema.GetColumn(i)->GetName(), ds->GetColumn(i)->GetName());
+    ASSERT_EQ(schema.GetColumn(i)->GetLength(), ds->GetColumn(i)->GetLength());
+    ASSERT_EQ(schema.GetColumn(i)->GetTableInd(), ds->GetColumn(i)->GetTableInd());
+    ASSERT_EQ(schema.GetColumn(i)->IsNullable(), ds->GetColumn(i)->IsNullable());
+    ASSERT_EQ(schema.GetColumn(i)->IsUnique(), ds->GetColumn(i)->IsUnique());
+    ASSERT_EQ(schema.GetColumn(i)->GetType(), ds->GetColumn(i)->GetType());
+  }
+  delete ds;
 }
