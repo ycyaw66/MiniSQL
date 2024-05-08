@@ -53,6 +53,7 @@ uint32_t Row::DeserializeFrom(char *buf, Schema *schema) {
   uint32_t null_bitmap = MACH_READ_FROM(uint32_t, buf);
   offset += sizeof(uint32_t);
   buf += sizeof(uint32_t);
+  
   std::vector<Column *> columns = schema->GetColumns();
   for (size_t i = 0; i < fields_num; i++) {
     uint32_t ofs = Field::DeserializeFrom(buf, columns[i]->GetType(), &fields_[i], (null_bitmap & (1 << i)) != 0);

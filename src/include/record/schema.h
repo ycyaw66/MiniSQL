@@ -1,3 +1,6 @@
+#ifndef MINISQL_SCHEMA_H
+#define MINISQL_SCHEMA_H
+
 #include <cstdint>
 #include <iostream>
 #include <vector>
@@ -7,8 +10,14 @@
 #include "glog/logging.h"
 #include "record/column.h"
 
-#ifndef MINISQL_SCHEMA_H
-#define MINISQL_SCHEMA_H
+/**
+ *  Schema format:
+ * -------------------------------------------
+ * | Column Nums | Column-1 | ... | Column-N | is_manage tag |
+ * -------------------------------------------
+ *
+ *
+ */
 
 class Schema {
  public:

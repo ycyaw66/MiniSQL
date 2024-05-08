@@ -35,26 +35,84 @@ Column::Column(const Column *other)
       nullable_(other->nullable_),
       unique_(other->unique_) {}
 
-/**
-* TODO: Student Implement
-*/
 uint32_t Column::SerializeTo(char *buf) const {
-  // replace with your code here
-  return 0;
+  uint32_t offset = 0;
+
+  MACH_WRITE_TO(uint32_t, buf, COLUMN_MAGIC_NUM);
+  offset += sizeof(uint32_t);
+  buf += sizeof(uint32_t);
+
+  MACH_WRITE_TO(size_t, buf, name_.size());
+  offset += sizeof(size_t);
+  buf += sizeof(size_t);
+  memcpy(buf, name_.c_str(), name_.size());
+  offset += name_.size();
+  buf += name_.size();
+
+  MACH_WRITE_TO(TypeId, buf, type_);
+  offset += sizeof(TypeId);
+  buf += sizeof(TypeId);
+
+  MACH_WRITE_TO(uint32_t, buf, len_);
+  offset += sizeof(uint32_t);
+  buf += sizeof(uint32_t);
+
+  MACH_WRITE_TO(uint32_t, buf, table_ind_);
+  offset += sizeof(uint32_t);
+  buf += sizeof(uint32_t);
+  
+  MACH_WRITE_TO(bool, buf, nullable_);
+  offset += sizeof(bool);
+  buf += sizeof(bool);
+
+  MACH_WRITE_TO(bool, buf, unique_);
+  offset += sizeof(bool);
+  buf += sizeof(bool);
+
+  return offset;
 }
 
-/**
- * TODO: Student Implement
- */
 uint32_t Column::DeserializeFrom(char *buf, Column *&column) {
-  // replace with your code here
-  return 0;
+  uint32_t offset = 0;
+  uint32_t magic_num = MACH_READ_FROM(uint32_t, buf);
+  ASSERT(magic_num == COLUMN_MAGIC_NUM, "Invalid column magic number.");
+  offset += sizeof(uint32_t);
+  buf += sizeof(uint32_t);
+
+  size_t name_size = MACH_READ_FROM(size_t, buf);
+  offset += sizeof(size_t);
+  buf += sizeof(size_t);
+
+  std::string name(buf, name_size);
+  offset += name_size;
+  buf += name_size;
+
+  TypeId type = MACH_READ_FROM(TypeId, buf);
+  offset += sizeof(TypeId);
+  buf += sizeof(TypeId);
+
+  uint32_t len = MACH_READ_FROM(uint32_t, buf);
+  offset += sizeof(uint32_t);
+  buf += sizeof(uint32_t);
+
+  uint32_t table_ind = MACH_READ_FROM(uint32_t, buf);
+  offset += sizeof(uint32_t);
+  buf += sizeof(uint32_t);
+
+  bool nullable = MACH_READ_FROM(bool, buf);
+  offset += sizeof(bool);
+  buf += sizeof(bool);
+
+  bool unique = MACH_READ_FROM(bool, buf);
+  offset += sizeof(bool);
+  buf += sizeof(bool);
+
+  column = new Column(name, type, len, table_ind, nullable, unique);
+
+  return offset;
 }
 
-/**
- * TODO: Student Implement
- */
 uint32_t Column::GetSerializedSize() const {
-  // replace with your code here
-  return 0;
+  uint32_t size = sizeof(uint32_t) * 3 + sizeof(size_t) + name_.size() + sizeof(TypeId) + sizeof(bool) * 2;
+  return size;
 }

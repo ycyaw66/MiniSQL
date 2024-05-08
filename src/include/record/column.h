@@ -6,6 +6,15 @@
 #include "common/macros.h"
 #include "record/types.h"
 
+/**
+ *  Column format:
+ * -------------------------------------------
+ * | Column Name Size | Column Name | Column Type | Column Length | Column Position | Nullable Tag | Unique Tag |
+ * -------------------------------------------
+ *
+ *
+ */
+
 class Column {
   friend class Schema;
 
