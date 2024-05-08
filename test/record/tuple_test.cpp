@@ -103,9 +103,63 @@ TEST(TupleTest, RowTest) {
 }
 
 TEST(TupleTest, ColumnTest) {
-
+  char buffer[PAGE_SIZE];
+  memset(buffer, 0, sizeof(buffer));
+  char *p = buffer;
+  Column column("id", TypeId::kTypeInt, 0, false, false);
+  p += column.SerializeTo(p);
+  uint32_t ofs = 0;
+  Column *dc = nullptr;
+  ofs += Column::DeserializeFrom(buffer + ofs, dc);
+  ASSERT_EQ(column.GetName(), dc->GetName());
+  ASSERT_EQ(column.GetType(), dc->GetType());
+  ASSERT_EQ(column.GetLength(), dc->GetLength());
+  ASSERT_EQ(column.GetTableInd(), dc->GetTableInd());
+  ASSERT_EQ(column.IsNullable(), dc->IsNullable());
+  ASSERT_EQ(column.IsUnique(), dc->IsUnique());
+  delete dc;
+  Column column2("name", TypeId::kTypeChar, 64, 1, true, false);
+  p += column2.SerializeTo(p);
+  dc = nullptr;
+  ofs += Column::DeserializeFrom(buffer + ofs, dc);
+  ASSERT_EQ(column2.GetName(), dc->GetName());
+  ASSERT_EQ(column2.GetType(), dc->GetType());
+  ASSERT_EQ(column2.GetLength(), dc->GetLength());
+  ASSERT_EQ(column2.GetTableInd(), dc->GetTableInd());
+  ASSERT_EQ(column2.IsNullable(), dc->IsNullable());
+  ASSERT_EQ(column2.IsUnique(), dc->IsUnique());
+  delete dc;
+  Column column3("account", TypeId::kTypeFloat, 2, true, false);
+  p += column3.SerializeTo(p);
+  dc = nullptr;
+  ofs += Column::DeserializeFrom(buffer + ofs, dc);
+  ASSERT_EQ(column3.GetName(), dc->GetName());
+  ASSERT_EQ(column3.GetType(), dc->GetType());
+  ASSERT_EQ(column3.GetLength(), dc->GetLength());
+  ASSERT_EQ(column3.GetTableInd(), dc->GetTableInd());
+  ASSERT_EQ(column3.IsNullable(), dc->IsNullable());
+  ASSERT_EQ(column3.IsUnique(), dc->IsUnique());
+  delete dc;
 }
 
 TEST(TupleTest, SchemaTest) {
-
+  // std::vector<Column *> columns = {new Column("id", TypeId::kTypeInt, 0, false, false),
+  //                                  new Column("name", TypeId::kTypeChar, 64, 1, true, false),
+  //                                  new Column("account", TypeId::kTypeFloat, 2, true, false)};
+  // Schema schema(columns);
+  // char buffer[PAGE_SIZE];
+  // memset(buffer, 0, sizeof(buffer));
+  // uint32_t size = schema.SerializeTo(buffer);
+  // Schema *ds = nullptr;
+  // Schema::DeserializeFrom(buffer, ds);
+  // ASSERT_EQ(schema.GetColumnCount(), ds->GetColumnCount());
+  // for (uint32_t i = 0; i < schema.GetColumnCount(); i++) {
+  //   ASSERT_EQ(schema.GetColumn(i)->GetName(), ds->GetColumn(i)->GetName());
+  //   ASSERT_EQ(schema.GetColumn(i)->GetLength(), ds->GetColumn(i)->GetLength());
+  //   ASSERT_EQ(schema.GetColumn(i)->GetTableInd(), ds->GetColumn(i)->GetTableInd());
+  //   ASSERT_EQ(schema.GetColumn(i)->IsNullable(), ds->GetColumn(i)->IsNullable());
+  //   ASSERT_EQ(schema.GetColumn(i)->IsUnique(), ds->GetColumn(i)->IsUnique());
+  //   ASSERT_EQ(schema.GetColumn(i)->GetType(), ds->GetColumn(i)->GetType());
+  // }
+  // delete ds;
 }

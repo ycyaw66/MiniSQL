@@ -107,12 +107,19 @@ uint32_t Column::DeserializeFrom(char *buf, Column *&column) {
   offset += sizeof(bool);
   buf += sizeof(bool);
 
-  column = new Column(name, type, len, table_ind, nullable, unique);
+  if (type == TypeId::kTypeChar) {
+    column = new Column(name, type, len, table_ind, nullable, unique);
+  } else {
+    column = new Column(name, type, table_ind, nullable, unique);
+  }
 
   return offset;
 }
 
 uint32_t Column::GetSerializedSize() const {
-  uint32_t size = sizeof(uint32_t) * 3 + sizeof(size_t) + name_.size() + sizeof(TypeId) + sizeof(bool) * 2;
+  uint32_t size = sizeof(uint32_t) * 2 + sizeof(size_t) + name_.size() + sizeof(TypeId) + sizeof(bool) * 2;
+  if (type_ == TypeId::kTypeChar) {
+    size += sizeof(uint32_t);
+  }
   return size;
 }
