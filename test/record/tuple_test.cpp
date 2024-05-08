@@ -101,3 +101,11 @@ TEST(TupleTest, RowTest) {
   ASSERT_TRUE(table_page.MarkDelete(row.GetRowId(), nullptr, nullptr, nullptr));
   table_page.ApplyDelete(row.GetRowId(), nullptr, nullptr);
 }
+
+TEST(TupleTest, ColumnTest) {
+
+}
+
+TEST(TupleTest, SchemaTest) {
+
+}
