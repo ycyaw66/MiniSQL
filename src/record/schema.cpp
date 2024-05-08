@@ -8,12 +8,12 @@ uint32_t Schema::SerializeTo(char *buf) const {
   return 0;
 }
 
-uint32_t Schema::GetSerializedSize() const {
+uint32_t Schema::DeserializeFrom(char *buf, Schema *&schema) {
   // replace with your code here
   return 0;
 }
 
-uint32_t Schema::DeserializeFrom(char *buf, Schema *&schema) {
+uint32_t Schema::GetSerializedSize() const {
   // replace with your code here
   return 0;
 }

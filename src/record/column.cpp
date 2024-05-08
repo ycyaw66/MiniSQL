@@ -46,7 +46,7 @@ uint32_t Column::SerializeTo(char *buf) const {
 /**
  * TODO: Student Implement
  */
-uint32_t Column::GetSerializedSize() const {
+uint32_t Column::DeserializeFrom(char *buf, Column *&column) {
   // replace with your code here
   return 0;
 }
@@ -54,7 +54,7 @@ uint32_t Column::GetSerializedSize() const {
 /**
  * TODO: Student Implement
  */
-uint32_t Column::DeserializeFrom(char *buf, Column *&column) {
+uint32_t Column::GetSerializedSize() const {
   // replace with your code here
   return 0;
 }
