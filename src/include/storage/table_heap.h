@@ -107,8 +107,7 @@ class TableHeap {
   /**
    * create table heap and initialize first page
    */
-  explicit TableHeap(BufferPoolManager *buffer_pool_manager, Schema *schema, Txn *txn, LogManager *log_manager,
-                     LockManager *lock_manager)
+  explicit TableHeap(BufferPoolManager *buffer_pool_manager, Schema *schema, Txn *txn, LogManager *log_manager, LockManager *lock_manager)
       : buffer_pool_manager_(buffer_pool_manager),
         schema_(schema),
         log_manager_(log_manager),
@@ -120,8 +119,7 @@ class TableHeap {
     buffer_pool_manager_->UnpinPage(first_page_id_, true);
   };
 
-  explicit TableHeap(BufferPoolManager *buffer_pool_manager, page_id_t first_page_id, Schema *schema,
-                     LogManager *log_manager, LockManager *lock_manager)
+  explicit TableHeap(BufferPoolManager *buffer_pool_manager, page_id_t first_page_id, Schema *schema, LogManager *log_manager, LockManager *lock_manager)
       : buffer_pool_manager_(buffer_pool_manager),
         first_page_id_(first_page_id),
         schema_(schema),

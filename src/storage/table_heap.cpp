@@ -134,16 +134,25 @@ void TableHeap::DeleteTable(page_id_t page_id) {
   }
 }
 
-/**
- * TODO: Student Implement
- */
 TableIterator TableHeap::Begin(Txn *txn) {
-  return TableIterator(nullptr, RowId(), nullptr);
+  RowId first_rid;
+  auto page = reinterpret_cast<TablePage *>(buffer_pool_manager_->FetchPage(first_page_id_));
+  if (page == nullptr) {
+    return End();
+  }
+  page->RLatch();
+  if (page->GetFirstTupleRid(&first_rid)) {
+    Row *first_row = new Row(first_rid);
+    GetTuple(first_row, txn);
+    page->RUnlatch();
+    buffer_pool_manager_->UnpinPage(first_page_id_, false);
+    return TableIterator(this, first_row, txn);
+  }
+  page->RUnlatch();
+  buffer_pool_manager_->UnpinPage(first_page_id_, false);
+  return End();
 }
 
-/**
- * TODO: Student Implement
- */
-TableIterator TableHeap::End() { 
-  return TableIterator(nullptr, RowId(), nullptr);
+TableIterator TableHeap::End() {
+  return TableIterator(this, nullptr, nullptr);
 }
