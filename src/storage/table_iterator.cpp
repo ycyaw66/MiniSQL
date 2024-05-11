@@ -6,7 +6,12 @@
 /**
  * TODO: Student Implement
  */
-TableIterator::TableIterator(TableHeap *table_heap, RowId rid, Txn *txn) {}
+TableIterator::TableIterator(TableHeap *table_heap, RowId rid, Txn *txn) {
+  table_heap_ = table_heap;
+  txn_ = txn;
+  row_ = new Row();
+  table_heap_->GetTuple(row_, txn);
+}
 
 TableIterator::TableIterator(const TableIterator &other) {
 

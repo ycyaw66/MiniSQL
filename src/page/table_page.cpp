@@ -30,7 +30,7 @@ bool TablePage::InsertTuple(Row &row, Schema *schema, Txn *txn, LockManager *loc
   }
   // Otherwise we claim available free space..
   SetFreeSpacePointer(GetFreeSpacePointer() - serialized_size);
-  uint32_t __attribute__((unused)) write_bytes = row.SerializeTo(GetData() + GetFreeSpacePointer(), schema);
+  uint32_t write_bytes = row.SerializeTo(GetData() + GetFreeSpacePointer(), schema);
   ASSERT(write_bytes == serialized_size, "Unexpected behavior in row serialize.");
 
   // Set the tuple.
@@ -83,7 +83,7 @@ bool TablePage::UpdateTuple(Row &new_row, Row *old_row, Schema *schema, Txn *txn
   }
   // Copy out the old value.
   uint32_t tuple_offset = GetTupleOffsetAtSlot(slot_num);
-  uint32_t __attribute__((unused)) read_bytes = old_row->DeserializeFrom(GetData() + tuple_offset, schema);
+  uint32_t read_bytes = old_row->DeserializeFrom(GetData() + tuple_offset, schema);
   ASSERT(tuple_size == read_bytes, "Unexpected behavior in tuple deserialize.");
   uint32_t free_space_pointer = GetFreeSpacePointer();
   ASSERT(tuple_offset >= free_space_pointer, "Offset should appear after current free space position.");
@@ -159,7 +159,7 @@ bool TablePage::GetTuple(Row *row, Schema *schema, Txn *txn, LockManager *lock_m
   }
   // At this point, we have at least a shared lock on the RID. Copy the tuple data into our result.
   uint32_t tuple_offset = GetTupleOffsetAtSlot(slot_num);
-  uint32_t __attribute__((unused)) read_bytes = row->DeserializeFrom(GetData() + tuple_offset, schema);
+  uint32_t read_bytes = row->DeserializeFrom(GetData() + tuple_offset, schema);
   ASSERT(tuple_size == read_bytes, "Unexpected behavior in tuple deserialize.");
   return true;
 }

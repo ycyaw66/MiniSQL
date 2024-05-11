@@ -113,7 +113,11 @@ class TableHeap {
         schema_(schema),
         log_manager_(log_manager),
         lock_manager_(lock_manager) {
-    ASSERT(false, "Not implemented yet.");
+    auto page = reinterpret_cast<TablePage *>(buffer_pool_manager_->NewPage(first_page_id_));
+    page->WLatch();
+    page->Init(first_page_id_, INVALID_PAGE_ID, log_manager_, txn);
+    page->WUnlatch();
+    buffer_pool_manager_->UnpinPage(first_page_id_, true);
   };
 
   explicit TableHeap(BufferPoolManager *buffer_pool_manager, page_id_t first_page_id, Schema *schema,
@@ -128,8 +132,8 @@ class TableHeap {
   BufferPoolManager *buffer_pool_manager_;
   page_id_t first_page_id_;
   Schema *schema_;
-  [[maybe_unused]] LogManager *log_manager_;
-  [[maybe_unused]] LockManager *lock_manager_;
+  LogManager *log_manager_;
+  LockManager *lock_manager_;
 };
 
 #endif  // MINISQL_TABLE_HEAP_H
