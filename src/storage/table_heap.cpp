@@ -150,9 +150,25 @@ TableIterator TableHeap::Begin(Txn *txn) {
   }
   page->RUnlatch();
   buffer_pool_manager_->UnpinPage(first_page_id_, false);
+
+  page_id_t next_page_id = page->GetNextPageId();
+  while (next_page_id != INVALID_PAGE_ID) {
+    page = reinterpret_cast<TablePage *>(buffer_pool_manager_->FetchPage(next_page_id));
+    page->RLatch();
+    if (page->GetFirstTupleRid(&first_rid)) {
+      Row *first_row = new Row(first_rid);
+      GetTuple(first_row, txn);
+      page->RUnlatch();
+      buffer_pool_manager_->UnpinPage(next_page_id, false);
+      return TableIterator(this, first_row, txn);
+    }
+    page->RUnlatch();
+    buffer_pool_manager_->UnpinPage(next_page_id, false);
+    next_page_id = page->GetNextPageId();
+  }
   return End();
 }
 
 TableIterator TableHeap::End() {
-  return TableIterator(this, nullptr, nullptr);
+  return TableIterator(nullptr, nullptr, nullptr);
 }

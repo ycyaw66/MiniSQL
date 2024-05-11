@@ -29,11 +29,14 @@ TableIterator::~TableIterator() {
 }
 
 bool TableIterator::operator==(const TableIterator &itr) const {
+  if (row_ == nullptr || itr.row_ == nullptr) {
+    return row_ == nullptr && itr.row_ == nullptr;
+  }
   return itr.row_->GetRowId() == row_->GetRowId();
 }
 
 bool TableIterator::operator!=(const TableIterator &itr) const {
-  return !(itr.row_->GetRowId() == row_->GetRowId());
+  return !(*this == itr);
 }
 
 const Row &TableIterator::operator*() {
@@ -49,6 +52,9 @@ TableIterator &TableIterator::operator=(const TableIterator &itr) noexcept {
   if (itr.row_ != nullptr) {
     row_ = new Row(*itr.row_);
   }
+  else {
+    row_ = nullptr;
+  }
   txn_ = itr.txn_;
   return *this;
 }
@@ -60,6 +66,7 @@ TableIterator &TableIterator::operator++() {
   auto page = reinterpret_cast<TablePage *>(table_heap_->buffer_pool_manager_->FetchPage(page_id));
   RowId next_rid;
   // 如果在当前页有下一个row
+  page->RLatch();
   if (page->GetNextTupleRid(row_->GetRowId(), &next_rid)) {
     Row *next_row = new Row(next_rid);
     table_heap_->GetTuple(next_row, txn_);
@@ -68,6 +75,8 @@ TableIterator &TableIterator::operator++() {
     row_ = next_row;
     return *this;
   } 
+  page->RUnlatch();
+  table_heap_->buffer_pool_manager_->UnpinPage(page_id, false);
 
   // 如果在当前页没有下一个row，寻找后续页的第一个row
   page_id_t next_page_id = page->GetNextPageId();
