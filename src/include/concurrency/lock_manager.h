@@ -24,7 +24,9 @@ class TxnManager;
  */
 class LockManager {
  public:
-  enum class LockMode { kNone, kShared, kExclusive };
+  enum class LockMode {
+    kNone, kShared, kExclusive
+  };
 
   /**
    * This class represents a lock request made by a transaction (txn_id)
@@ -133,6 +135,7 @@ class LockManager {
    * Add edge t1->t2 in the dependency graph
    * */
   void AddEdge(txn_id_t t1, txn_id_t t2);
+
   /** Removes an edge from t1 -> t2. */
   void RemoveEdge(txn_id_t t1, txn_id_t t2);
 
@@ -165,15 +168,6 @@ class LockManager {
   void LockPrepare(Txn *txn, const RowId &rid);
 
   void CheckAbort(Txn *txn, LockRequestQueue &req_queue);
-
-  /**
-   * Your DFS Cycle detection algorithm must be deterministic.
-   * In order to do achieve this, you must always choose to explore the lowest transaction id first.
-   * This means when choosing which unexplored node to run DFS from, always choose the node with
-   * the lowest transaction id. This also means when exploring neighbors, explore them in sorted order
-   * from lowest to highest.
-   */
-  bool DFS(txn_id_t txn_id);
 
  private:
   /** Lock table for lock requests. */
