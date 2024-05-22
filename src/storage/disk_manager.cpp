@@ -33,6 +33,9 @@ DiskManager::DiskManager(const std::string &db_file) : file_name_(db_file) {
       break;
     }
   }
+  for (uint32_t i = 0; i < MAX_VALID_EXTENT_ID; i++) {
+    bitmap_page_[i] = new BitmapPage<PAGE_SIZE>();
+  }
 }
 
 void DiskManager::Close() {
@@ -69,7 +72,6 @@ page_id_t DiskManager::AllocatePage() {
   if (next_free_extent_ == meta_page_->GetExtentNums()) {
     meta_page_->num_extents_++;
     next_free_extent_ = meta_page_->GetExtentNums() - 1;
-    bitmap_page_[next_free_extent_] = new BitmapPage<PAGE_SIZE>();
     uint32_t page_offset;
     if (bitmap_page_[next_free_extent_]->AllocatePage(page_offset)) {
       meta_page_->num_allocated_pages_++;

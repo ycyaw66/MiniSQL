@@ -82,7 +82,7 @@ bool BPlusTree::GetValue(const GenericKey *key, std::vector<RowId> &result, Txn 
 bool BPlusTree::Insert(GenericKey *key, const RowId &value, Txn *transaction) {
   if (IsEmpty()) {
     StartNewTree(key, value);
-    return;
+    return true;
   }
   return InsertIntoLeaf(key, value, transaction);
 }
@@ -197,9 +197,6 @@ void BPlusTree::InsertIntoParent(BPlusTreePage *old_node, GenericKey *key, BPlus
   }
 }
 
-/**
- * TODO: Student Implement
- */
 /*****************************************************************************
  * REMOVE
  *****************************************************************************/
