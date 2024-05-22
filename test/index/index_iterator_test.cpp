@@ -12,7 +12,7 @@ TEST(BPlusTreeTests, IndexIteratorTest) {
       new Column("int", TypeId::kTypeInt, 0, false, false),
   };
   Schema *table_schema = new Schema(columns);
-  KeyManager KP(table_schema, 16);
+  KeyManager KP(table_schema, 20);
   BPlusTree tree(0, engine.bpm_, KP);
   // Generate insert record
   vector<GenericKey *> insert_key;

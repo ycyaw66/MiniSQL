@@ -387,9 +387,6 @@ bool BPlusTree::AdjustRoot(BPlusTreePage *old_root_node) {
   return false;
 }
 
-/**
- * TODO: Student Implement
- */
 /*****************************************************************************
  * INDEX ITERATOR
  *****************************************************************************/
@@ -399,31 +396,35 @@ bool BPlusTree::AdjustRoot(BPlusTreePage *old_root_node) {
  * @return : index iterator
  */
 IndexIterator BPlusTree::Begin() {
-  return IndexIterator();
+  if (IsEmpty()) {
+    return End();
+  }
+  auto leaf_page = reinterpret_cast<BPlusTreeLeafPage *>(FindLeafPage(nullptr, root_page_id_, true)->GetData());
+  buffer_pool_manager_->UnpinPage(leaf_page->GetPageId(), false);
+  return IndexIterator(leaf_page->GetPageId(), buffer_pool_manager_, 0);
 }
 
-/**
- * TODO: Student Implement
- */
 /*
  * Input parameter is low key, find the leaf page that contains the input key
  * first, then construct index iterator
  * @return : index iterator
  */
 IndexIterator BPlusTree::Begin(const GenericKey *key) {
-   return IndexIterator();
+  if (IsEmpty()) {
+    return End();
+  }
+  auto leaf_page = reinterpret_cast<BPlusTreeLeafPage *>(FindLeafPage(key, root_page_id_)->GetData());
+  buffer_pool_manager_->UnpinPage(leaf_page->GetPageId(), false);
+  return IndexIterator(leaf_page->GetPageId(), buffer_pool_manager_, leaf_page->KeyIndex(key, processor_));
 }
 
-/**
- * TODO: Student Implement
- */
 /*
  * Input parameter is void, construct an index iterator representing the end
  * of the key/value pair in the leaf node
  * @return : index iterator
  */
 IndexIterator BPlusTree::End() {
-  return IndexIterator();
+  return IndexIterator(INVALID_PAGE_ID, buffer_pool_manager_, 0);
 }
 
 /*****************************************************************************
