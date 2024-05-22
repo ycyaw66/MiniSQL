@@ -179,6 +179,7 @@ page_id_t BPlusTreeInternalPage::RemoveAndReturnOnlyChild() {
  * to make sure the middle key is added to the recipient to maintain the invariant.
  * You also need to use BufferPoolManager to persist changes to the parent page id for those
  * pages that are moved to the recipient
+ * recipient在左
  */
 void BPlusTreeInternalPage::MoveAllTo(BPlusTreeInternalPage *recipient, GenericKey *middle_key, BufferPoolManager *buffer_pool_manager) {
   ASSERT(recipient != nullptr, "recipient is null!");
@@ -227,6 +228,7 @@ void BPlusTreeInternalPage::MoveLastToFrontOf(BPlusTreeInternalPage *recipient, 
   ASSERT(recipient != nullptr, "recipient is null!");
   recipient->SetKeyAt(0, middle_key);
   recipient->CopyFirstFrom(ValueAt(GetSize() - 1), buffer_pool_manager);
+  recipient->SetKeyAt(0, KeyAt(GetSize() - 1));
   Remove(GetSize() - 1);
 }
 

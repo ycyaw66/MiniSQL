@@ -48,7 +48,7 @@ void BPlusTreeLeafPage::SetNextPageId(page_id_t next_page_id) {
  * 二分查找
  */
 int BPlusTreeLeafPage::KeyIndex(const GenericKey *key, const KeyManager &KM) {
-  int l = 0, r = GetSize() - 1, index = 0;
+  int l = 0, r = GetSize() - 1, index = GetSize();
   while (l <= r) {
     int mid = (l + r) >> 1;
     if (KM.CompareKeys(KeyAt(mid), key) >= 0) { //key <= KeyAt(mid)
@@ -106,6 +106,12 @@ std::pair<GenericKey *, RowId> BPlusTreeLeafPage::GetItem(int index) {
  */
 int BPlusTreeLeafPage::Insert(GenericKey *key, const RowId &value, const KeyManager &KM) {
   int index = KeyIndex(key, KM);
+  if (index == GetSize()) {
+    SetKeyAt(index, key);
+    SetValueAt(index, value);
+    IncreaseSize(1);
+    return GetSize();
+  }
   PairCopy(PairPtrAt(index + 1), PairPtrAt(index), GetSize() - index);
   SetKeyAt(index, key);
   SetValueAt(index, value);
@@ -144,6 +150,9 @@ void BPlusTreeLeafPage::CopyNFrom(void *src, int size) {
  */
 bool BPlusTreeLeafPage::Lookup(const GenericKey *key, RowId &value, const KeyManager &KM) {
   int index = KeyIndex(key, KM);
+  if (index == GetSize()) {
+    return false;
+  }
   if (KM.CompareKeys(KeyAt(index), key) == 0) {
     value = ValueAt(index);
     return true;
@@ -162,7 +171,7 @@ bool BPlusTreeLeafPage::Lookup(const GenericKey *key, RowId &value, const KeyMan
  */
 int BPlusTreeLeafPage::RemoveAndDeleteRecord(const GenericKey *key, const KeyManager &KM) {
   int index = KeyIndex(key, KM);
-  if (KM.CompareKeys(KeyAt(index), key) != 0) {
+  if (index == GetSize() || KM.CompareKeys(KeyAt(index), key) != 0) {
     return GetSize();
   }
   PairCopy(PairPtrAt(index), PairPtrAt(index + 1), GetSize() - index - 1);

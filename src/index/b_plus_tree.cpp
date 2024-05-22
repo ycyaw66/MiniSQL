@@ -13,8 +13,14 @@ BPlusTree::BPlusTree(index_id_t index_id, BufferPoolManager *buffer_pool_manager
       processor_(KM),
       leaf_max_size_(leaf_max_size),
       internal_max_size_(internal_max_size) {
-  leaf_max_size = (PAGE_SIZE - LEAF_PAGE_HEADER_SIZE) / (KM.GetKeySize() + sizeof(RowId)) - 1;
-  internal_max_size = leaf_max_size;
+  if (leaf_max_size_ == UNDEFINED_SIZE) {
+    leaf_max_size_ = (PAGE_SIZE - LEAF_PAGE_HEADER_SIZE) / (KM.GetKeySize() + sizeof(RowId)) - 1;
+  }
+  if (internal_max_size_ == UNDEFINED_SIZE) {
+    internal_max_size_ = leaf_max_size_;
+  }
+  // leaf_max_size_ = 4; // for debug
+  // internal_max_size_ = 4; // for debug
   auto page = reinterpret_cast<IndexRootsPage *>(buffer_pool_manager_->FetchPage(INDEX_ROOTS_PAGE_ID)->GetData());
   if (!page->GetRootId(index_id, &root_page_id_)) {
     root_page_id_ = INVALID_PAGE_ID;
@@ -119,7 +125,7 @@ bool BPlusTree::InsertIntoLeaf(GenericKey *key, const RowId &value, Txn *transac
   auto page = FindLeafPage(key, root_page_id_);
   auto leaf_page = reinterpret_cast<BPlusTreeLeafPage *>(page->GetData());
   RowId tmpvalue;
-  // 已经有这个key了， return false
+  // 已经有这个key了，return false
   if (leaf_page->Lookup(key, tmpvalue, processor_)) {
     buffer_pool_manager_->UnpinPage(leaf_page->GetPageId(), false);
     return false;
@@ -234,15 +240,23 @@ void BPlusTree::Remove(const GenericKey *key, Txn *transaction) {
  */
 template <typename N>
 bool BPlusTree::CoalesceOrRedistribute(N *&node, Txn *transaction) {
+  if (node->IsRootPage()) {
+    return AdjustRoot(node);
+  }
   auto parent_page = reinterpret_cast<BPlusTreeInternalPage *>(buffer_pool_manager_->FetchPage(node->GetParentPageId())->GetData());
   int index = parent_page->ValueIndex(node->GetPageId());
   int neighbor_index = (index == 0) ? 1 : index - 1;
   auto neighbor_page = reinterpret_cast<N *>(buffer_pool_manager_->FetchPage(parent_page->ValueAt(neighbor_index))->GetData());
+  bool delete_tag;
   if (neighbor_page->GetSize() + node->GetSize() > node->GetMaxSize()) {
     Redistribute(neighbor_page, node, index);
-    return false;
+    delete_tag = false;
+  } else {
+    delete_tag = Coalesce(neighbor_page, node, parent_page, index, transaction);
   }
-  return Coalesce(neighbor_page, node, parent_page, index, transaction);
+  buffer_pool_manager_->UnpinPage(parent_page->GetPageId(), true);
+  buffer_pool_manager_->UnpinPage(neighbor_page->GetPageId(), true);
+  return delete_tag;
 }
 
 /*
@@ -256,10 +270,17 @@ bool BPlusTree::CoalesceOrRedistribute(N *&node, Txn *transaction) {
  * @return  true means parent node should be deleted, false means no deletion happened
  */
 bool BPlusTree::Coalesce(LeafPage *&neighbor_node, LeafPage *&node, InternalPage *&parent, int index, Txn *transaction) {
-  node->MoveAllTo(neighbor_node);
-  parent->Remove(index);
-  buffer_pool_manager_->UnpinPage(node->GetPageId(), false);
-  buffer_pool_manager_->DeletePage(node->GetPageId());
+  if (index == 0) {
+    neighbor_node->MoveAllTo(node);
+    parent->Remove(1);
+    buffer_pool_manager_->UnpinPage(neighbor_node->GetPageId(), false);
+    buffer_pool_manager_->DeletePage(neighbor_node->GetPageId());
+  } else {
+    node->MoveAllTo(neighbor_node);
+    parent->Remove(index);
+    buffer_pool_manager_->UnpinPage(node->GetPageId(), false);
+    buffer_pool_manager_->DeletePage(node->GetPageId());
+  }
   if (parent->GetSize() < parent->GetMinSize()) {
     // parent节点少于minSize，递归处理
     return CoalesceOrRedistribute(parent, transaction);
@@ -268,11 +289,19 @@ bool BPlusTree::Coalesce(LeafPage *&neighbor_node, LeafPage *&node, InternalPage
 }
 
 bool BPlusTree::Coalesce(InternalPage *&neighbor_node, InternalPage *&node, InternalPage *&parent, int index, Txn *transaction) {
-  GenericKey *middle_key = parent->KeyAt(index);
-  node->MoveAllTo(neighbor_node, middle_key, buffer_pool_manager_);
-  parent->Remove(index);
-  buffer_pool_manager_->UnpinPage(node->GetPageId(), false);
-  buffer_pool_manager_->DeletePage(node->GetPageId());
+  if (index == 0) {
+    GenericKey *middle_key = parent->KeyAt(1);
+    neighbor_node->MoveAllTo(node, middle_key, buffer_pool_manager_);
+    parent->Remove(1);
+    buffer_pool_manager_->UnpinPage(neighbor_node->GetPageId(), false);
+    buffer_pool_manager_->DeletePage(neighbor_node->GetPageId());
+  } else {
+    GenericKey *middle_key = parent->KeyAt(index);
+    node->MoveAllTo(neighbor_node, middle_key, buffer_pool_manager_);
+    parent->Remove(index);
+    buffer_pool_manager_->UnpinPage(node->GetPageId(), false);
+    buffer_pool_manager_->DeletePage(node->GetPageId());
+  }
   if (parent->GetSize() < parent->GetMinSize()) {
     // parent节点少于minSize，递归处理
     return CoalesceOrRedistribute(parent, transaction);

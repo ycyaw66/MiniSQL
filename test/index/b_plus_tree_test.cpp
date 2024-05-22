@@ -15,7 +15,7 @@ TEST(BPlusTreeTests, SampleTest) {
       new Column("int", TypeId::kTypeInt, 0, false, false),
   };
   Schema *table_schema = new Schema(columns);
-  KeyManager KP(table_schema, 16);
+  KeyManager KP(table_schema, 20);
   BPlusTree tree(0, engine.bpm_, KP);
   TreeFileManagers mgr("tree_");
   // Prepare data
@@ -69,4 +69,5 @@ TEST(BPlusTreeTests, SampleTest) {
     ASSERT_TRUE(tree.GetValue(delete_seq[i], ans));
     ASSERT_EQ(kv_map[delete_seq[i]], ans[ans.size() - 1]);
   }
+  ASSERT_TRUE(tree.Check());
 }
