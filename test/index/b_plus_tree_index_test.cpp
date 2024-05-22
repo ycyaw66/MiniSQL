@@ -63,15 +63,15 @@ TEST(BPlusTreeTests, BPlusTreeIndexSimpleTest) {
     Row row(fields);
     RowId rid(1000, i);
     ASSERT_EQ(DB_SUCCESS, index->ScanKey(row, ret, nullptr));
-    // ASSERT_EQ(rid.Get(), ret[i].Get());
+    ASSERT_EQ(rid.Get(), ret[i].Get());
   }
   // Iterator Scan
-  // IndexIterator iter = index->GetBeginIterator();
-  // uint32_t i = 0;
-  // for (; iter != index->GetEndIterator(); ++iter) {
-  //   ASSERT_EQ(1000, (*iter).second.GetPageId());
-  //   ASSERT_EQ(i, (*iter).second.GetSlotNum());
-  //   i++;
-  // }
-  // delete index;
+  IndexIterator iter = index->GetBeginIterator();
+  uint32_t i = 0;
+  for (; iter != index->GetEndIterator(); ++iter) {
+    ASSERT_EQ(1000, (*iter).second.GetPageId());
+    ASSERT_EQ(i, (*iter).second.GetSlotNum());
+    i++;
+  }
+  delete index;
 }
