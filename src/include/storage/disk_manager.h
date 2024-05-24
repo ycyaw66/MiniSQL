@@ -102,7 +102,6 @@ class DiskManager {
   char meta_data_[PAGE_SIZE];
   DiskFileMetaPage *meta_page_;
   uint32_t next_free_extent_{0};
-  BitmapPage<PAGE_SIZE> *bitmap_page_[MAX_VALID_EXTENT_ID];
 };
 
 #endif

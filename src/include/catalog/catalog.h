@@ -92,8 +92,6 @@ class CatalogManager {
   dberr_t DropIndex(const std::string &table_name, const std::string &index_name);
 
  private:
-  dberr_t DropTable(table_id_t table_id);
-
   dberr_t FlushCatalogMetaPage() const;
 
   dberr_t LoadTable(const table_id_t table_id, const page_id_t page_id);
