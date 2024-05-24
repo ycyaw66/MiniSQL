@@ -59,42 +59,10 @@ CatalogMeta::CatalogMeta() {}
 
 /**
  * TODO: Student Implement
- * 把catalog meta加载到内存里
  */
 CatalogManager::CatalogManager(BufferPoolManager *buffer_pool_manager, LockManager *lock_manager, LogManager *log_manager, bool init)
     : buffer_pool_manager_(buffer_pool_manager), lock_manager_(lock_manager), log_manager_(log_manager) {
-    if (init) {
-      // create catalog meta page
-      catalog_meta_ = CatalogMeta::NewInstance();
-      // 可能要序列化一下？
-      FlushCatalogMetaPage();
-    } else {
-      // load catalog meta page
-      auto page = buffer_pool_manager_->FetchPage(CATALOG_META_PAGE_ID);
-      char *data = page->GetData();
-      catalog_meta_ = CatalogMeta::DeserializeFrom(data);
-      for (auto iter : catalog_meta_->table_meta_pages_) {
-        page_id_t page_id = iter.second;
-        auto table_page = buffer_pool_manager_->FetchPage(page_id);
-        char *table_data = table_page->GetData();
-        TableMetadata *table_meta = nullptr;
-        TableMetadata::DeserializeFrom(table_data, table_meta);
-        TableHeap* table_heap = TableHeap::Create(buffer_pool_manager_, table_meta->GetFirstPageId(), table_meta->GetSchema(), log_manager, lock_manager);
-        TableInfo* table_info = TableInfo::Create();
-        table_info->Init(table_meta, table_heap);
-        table_names_[table_meta->GetTableName()] = table_meta->GetTableId();
-        tables_[table_meta->GetTableId()] = table_info;
-        buffer_pool_manager_->UnpinPage(page_id, false);
-      }
-      for (auto iter : catalog_meta_->index_meta_pages_) {
-        page_id_t page_id = iter.second;
-        auto index_page = buffer_pool_manager_->FetchPage(page_id);
-        char *index_data = index_page->GetData();
-        IndexMetadata *index_meta = nullptr;
-        IndexMetadata::DeserializeFrom(index_data, index_meta);
-      }
-      buffer_pool_manager_->UnpinPage(CATALOG_META_PAGE_ID, false);
-    }
+    
 }
 
 CatalogManager::~CatalogManager() {
@@ -135,7 +103,9 @@ dberr_t CatalogManager::GetTables(vector<TableInfo *> &tables) const {
 /**
  * TODO: Student Implement
  */
-dberr_t CatalogManager::CreateIndex(const std::string &table_name, const string &index_name, const std::vector<std::string> &index_keys, Txn *txn, IndexInfo *&index_info, const string &index_type) {
+dberr_t CatalogManager::CreateIndex(const std::string &table_name, const string &index_name,
+                                    const std::vector<std::string> &index_keys, Txn *txn, IndexInfo *&index_info,
+                                    const string &index_type) {
   // ASSERT(false, "Not Implemented yet");
   return DB_FAILED;
 }
@@ -143,7 +113,8 @@ dberr_t CatalogManager::CreateIndex(const std::string &table_name, const string 
 /**
  * TODO: Student Implement
  */
-dberr_t CatalogManager::GetIndex(const std::string &table_name, const std::string &index_name, IndexInfo *&index_info) const {
+dberr_t CatalogManager::GetIndex(const std::string &table_name, const std::string &index_name,
+                                 IndexInfo *&index_info) const {
   // ASSERT(false, "Not Implemented yet");
   return DB_FAILED;
 }
@@ -167,7 +138,7 @@ dberr_t CatalogManager::DropTable(const string &table_name) {
 /**
  * TODO: Student Implement
  */
-dberr_t CatalogManager::DropTable(table_id_t table_id) {
+dberr_t CatalogManager::DropIndex(const string &table_name, const string &index_name) {
   // ASSERT(false, "Not Implemented yet");
   return DB_FAILED;
 }
@@ -175,26 +146,9 @@ dberr_t CatalogManager::DropTable(table_id_t table_id) {
 /**
  * TODO: Student Implement
  */
-dberr_t CatalogManager::DropIndex(const string &table_name, const string &index_name) {
+dberr_t CatalogManager::FlushCatalogMetaPage() const {
   // ASSERT(false, "Not Implemented yet");
   return DB_FAILED;
-}
-
-/**
- * 把catalog meta page写入磁盘
- */
-dberr_t CatalogManager::FlushCatalogMetaPage() const {
-  auto page = buffer_pool_manager_->FetchPage(CATALOG_META_PAGE_ID);
-  if (page == nullptr) {
-    return DB_FAILED;
-  }
-  char *data = page->GetData();
-  catalog_meta_->SerializeTo(data);
-  buffer_pool_manager_->UnpinPage(CATALOG_META_PAGE_ID, true);
-  if (!buffer_pool_manager_->FlushPage(CATALOG_META_PAGE_ID)) {
-    return DB_FAILED;
-  }
-  return DB_SUCCESS;
 }
 
 /**

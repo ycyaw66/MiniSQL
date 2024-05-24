@@ -12,11 +12,13 @@ class TableHeap {
   friend class TableIterator;
 
  public:
-  static TableHeap *Create(BufferPoolManager *buffer_pool_manager, Schema *schema, Txn *txn, LogManager *log_manager, LockManager *lock_manager) {
+  static TableHeap *Create(BufferPoolManager *buffer_pool_manager, Schema *schema, Txn *txn, LogManager *log_manager,
+                           LockManager *lock_manager) {
     return new TableHeap(buffer_pool_manager, schema, txn, log_manager, lock_manager);
   }
 
-  static TableHeap *Create(BufferPoolManager *buffer_pool_manager, page_id_t first_page_id, Schema *schema, LogManager *log_manager, LockManager *lock_manager) {
+  static TableHeap *Create(BufferPoolManager *buffer_pool_manager, page_id_t first_page_id, Schema *schema,
+                           LogManager *log_manager, LockManager *lock_manager) {
     return new TableHeap(buffer_pool_manager, first_page_id, schema, log_manager, lock_manager);
   }
 
