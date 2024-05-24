@@ -14,8 +14,7 @@ class IndexMetadata {
   friend class IndexInfo;
 
  public:
-  static IndexMetadata *Create(const index_id_t index_id, const std::string &index_name, const table_id_t table_id,
-                               const std::vector<uint32_t> &key_map);
+  static IndexMetadata *Create(const index_id_t index_id, const std::string &index_name, const table_id_t table_id, const std::vector<uint32_t> &key_map);
 
   uint32_t SerializeTo(char *buf) const;
 
@@ -36,8 +35,7 @@ class IndexMetadata {
  private:
   IndexMetadata() = delete;
 
-  explicit IndexMetadata(const index_id_t index_id, const std::string &index_name, const table_id_t table_id,
-                         const std::vector<uint32_t> &key_map);
+  explicit IndexMetadata(const index_id_t index_id, const std::string &index_name, const table_id_t table_id, const std::vector<uint32_t> &key_map);
 
  private:
   static constexpr uint32_t INDEX_METADATA_MAGIC_NUM = 344528;

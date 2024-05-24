@@ -22,8 +22,7 @@ class TableMetadata {
   /*
    * will create new table schema and owned by mem heap
    */
-  static TableMetadata *Create(table_id_t table_id, std::string table_name, page_id_t root_page_id,
-                               TableSchema *schema);
+  static TableMetadata *Create(table_id_t table_id, std::string table_name, page_id_t root_page_id, TableSchema *schema);
 
   inline table_id_t GetTableId() const { return table_id_; }
 

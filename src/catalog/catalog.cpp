@@ -51,12 +51,8 @@ CatalogMeta *CatalogMeta::DeserializeFrom(char *buf) {
   return meta;
 }
 
-/**
- * TODO: Student Implement
- */
 uint32_t CatalogMeta::GetSerializedSize() const {
-  ASSERT(false, "Not Implemented yet");
-  return 0;
+  return 4 * 3 + table_meta_pages_.size() * 8 + index_meta_pages_.size() * 8;
 }
 
 CatalogMeta::CatalogMeta() {}
@@ -64,10 +60,9 @@ CatalogMeta::CatalogMeta() {}
 /**
  * TODO: Student Implement
  */
-CatalogManager::CatalogManager(BufferPoolManager *buffer_pool_manager, LockManager *lock_manager,
-                               LogManager *log_manager, bool init)
+CatalogManager::CatalogManager(BufferPoolManager *buffer_pool_manager, LockManager *lock_manager, LogManager *log_manager, bool init)
     : buffer_pool_manager_(buffer_pool_manager), lock_manager_(lock_manager), log_manager_(log_manager) {
-//    ASSERT(false, "Not Implemented yet");
+    
 }
 
 CatalogManager::~CatalogManager() {
