@@ -71,8 +71,7 @@ class CatalogMeta {
  */
 class CatalogManager {
  public:
-  explicit CatalogManager(BufferPoolManager *buffer_pool_manager, LockManager *lock_manager, LogManager *log_manager,
-                          bool init);
+  explicit CatalogManager(BufferPoolManager *buffer_pool_manager, LockManager *lock_manager, LogManager *log_manager, bool init);
 
   ~CatalogManager();
 
@@ -82,9 +81,7 @@ class CatalogManager {
 
   dberr_t GetTables(std::vector<TableInfo *> &tables) const;
 
-  dberr_t CreateIndex(const std::string &table_name, const std::string &index_name,
-                      const std::vector<std::string> &index_keys, Txn *txn, IndexInfo *&index_info,
-                      const string &index_type);
+  dberr_t CreateIndex(const std::string &table_name, const std::string &index_name, const std::vector<std::string> &index_keys, Txn *txn, IndexInfo *&index_info, const string &index_type);
 
   dberr_t GetIndex(const std::string &table_name, const std::string &index_name, IndexInfo *&index_info) const;
 
@@ -106,9 +103,9 @@ class CatalogManager {
   dberr_t GetTable(const table_id_t table_id, TableInfo *&table_info);
 
  private:
-  [[maybe_unused]] BufferPoolManager *buffer_pool_manager_;
-  [[maybe_unused]] LockManager *lock_manager_;
-  [[maybe_unused]] LogManager *log_manager_;
+  BufferPoolManager *buffer_pool_manager_;
+  LockManager *lock_manager_;
+  LogManager *log_manager_;
   CatalogMeta *catalog_meta_;
   std::atomic<table_id_t> next_table_id_;
   std::atomic<index_id_t> next_index_id_;
