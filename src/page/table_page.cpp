@@ -83,6 +83,7 @@ bool TablePage::UpdateTuple(Row &new_row, Row *old_row, Schema *schema, Txn *txn
   }
   // Copy out the old value.
   uint32_t tuple_offset = GetTupleOffsetAtSlot(slot_num);
+  old_row->destroy();
   uint32_t read_bytes = old_row->DeserializeFrom(GetData() + tuple_offset, schema);
   ASSERT(tuple_size == read_bytes, "Unexpected behavior in tuple deserialize.");
   uint32_t free_space_pointer = GetFreeSpacePointer();

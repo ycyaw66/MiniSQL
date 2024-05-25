@@ -1,8 +1,5 @@
 #include "record/schema.h"
 
-/**
- * TODO: Student Implement
- */
 uint32_t Schema::SerializeTo(char *buf) const {
   uint32_t offset = 0;
   MACH_WRITE_TO(uint32_t, buf, SCHEMA_MAGIC_NUM);
