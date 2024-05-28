@@ -148,7 +148,7 @@ dberr_t CatalogManager::GetTable(const string &table_name, TableInfo *&table_inf
 
 dberr_t CatalogManager::GetTables(vector<TableInfo *> &tables) const {
   if (tables_.empty()) {
-    return DB_TABLE_NOT_EXIST;
+    return DB_FAILED;
   }
   for (auto iter : tables_) {
     tables.push_back(iter.second);

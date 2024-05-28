@@ -17,6 +17,8 @@
 #include "planner/planner.h"
 #include "utils/utils.h"
 
+#define ENABLE_EXECUTE_DEBUG
+
 ExecuteEngine::ExecuteEngine() {
   char path[] = "./databases";
   DIR *dir;
@@ -333,23 +335,116 @@ dberr_t ExecuteEngine::ExecuteShowTables(pSyntaxNode ast, ExecuteContext *contex
 }
 
 /**
- * TODO: Student Implement
+ * 要做的错误检查：column是否重复，primary key是否在column中，primary key是否重复
  */
 dberr_t ExecuteEngine::ExecuteCreateTable(pSyntaxNode ast, ExecuteContext *context) {
 #ifdef ENABLE_EXECUTE_DEBUG
   LOG(INFO) << "ExecuteCreateTable" << std::endl;
 #endif
-  return DB_FAILED;
+  if (current_db_.empty()) {
+    cout << "No database selected" << endl;
+    return DB_FAILED;
+  }
+  TableInfo *table_info = nullptr;
+  // 根据语法树获取name和schema
+  string table_name(ast->child_->val_);
+  if (dbs_[current_db_]->catalog_mgr_->GetTable(table_name, table_info) == DB_SUCCESS) {
+    cout << "Table " + table_name + " already exists." << endl;
+    return DB_FAILED;
+  }
+  auto column_definition_list_node = ast->child_->next_;
+  std::vector<Column *> columns;
+  uint32_t index = 0;
+  // 存储primary key
+  std::vector<std::string> primary_keys;
+  for (auto column_definition_node = column_definition_list_node->child_;column_definition_node != nullptr; column_definition_node = column_definition_node->next_) {
+    // 如果是column_list，说明是primary key（不一定存在）
+    if (column_definition_node->type_ == kNodeColumnList) {
+      for (auto identifier_node = column_definition_node->child_; identifier_node != nullptr; identifier_node = identifier_node->next_) {
+        primary_keys.push_back(identifier_node->val_);
+      }
+      break;
+    }
+    // 如果是column_definition，说明是column
+    string column_name(column_definition_node->child_->val_);
+    string column_type(column_definition_node->child_->next_->val_);
+    bool unique = false;
+    if (column_definition_node->val_ == "unique") {
+      unique = true;
+    }
+    if (column_type == "int") {
+      columns.push_back(new Column(column_name, kTypeInt, index++, false, unique));
+    } else if (column_type == "float") {
+      columns.push_back(new Column(column_name, kTypeFloat, index++, false, unique));
+    } else if (column_type == "char") {
+      string length(column_definition_node->child_->next_->child_->val_);
+      uint32_t len = stoi(length);
+      columns.push_back(new Column(column_name, kTypeChar, len, index++, false, unique));
+    } else {
+      cout << "You have an error in your SQL syntax" << endl;
+      return DB_FAILED;
+    }
+  }
+  // 检查有没有重复的column
+  for (int i = 0; i < columns.size(); i++) {
+    for (int j = i + 1; j < columns.size(); j++) {
+      if (columns[i]->GetName() == columns[j]->GetName()) {
+        cout << "Duplicate column name '" + columns[i]->GetName() + "'"<< endl;
+        return DB_FAILED;
+      }
+    }
+  }
+  // 检查有没有重复的primary key
+  for (int i = 0; i < primary_keys.size(); i++) {
+    for (int j = i + 1; j < primary_keys.size(); j++) {
+      if (primary_keys[i] == primary_keys[j]) {
+        cout << "Duplicate column name '" + primary_keys[i] + "'"<< endl;
+        return DB_FAILED;
+      }
+    }
+  }
+  // 检查是否所有的primary key都在column中
+  for (auto key : primary_keys) {
+    bool found = false;
+    for (int i = 0; i < columns.size(); i++) {
+      if (columns[i]->GetName() == key) {
+        found = true;
+        // 更新column的null属性，因为没有SetUnique函数，所以只能重新new一个
+        if (columns[i]->GetType() == kTypeChar) {
+          columns[i] = new Column(columns[i]->GetName(), columns[i]->GetType(), columns[i]->GetLength(), columns[i]->GetTableInd(), true, columns[i]->IsUnique());
+        } else {
+          columns[i] = new Column(columns[i]->GetName(), columns[i]->GetType(), columns[i]->GetTableInd(), true, columns[i]->IsUnique());
+        }
+        break;
+      }
+    }
+    if (!found) {
+      cout << " Key column '" + key + "' doesn't exist in table" << endl;
+      return DB_FAILED;
+    }
+  }
+  Schema *schema = new Schema(columns);
+  // 建表
+  dbs_[current_db_]->catalog_mgr_->CreateTable(table_name, schema, context->GetTransaction(), table_info);
+  cout << "Table " + table_name + " is created successfully" << endl;
+  return DB_SUCCESS;
 }
 
-/**
- * TODO: Student Implement
- */
 dberr_t ExecuteEngine::ExecuteDropTable(pSyntaxNode ast, ExecuteContext *context) {
 #ifdef ENABLE_EXECUTE_DEBUG
   LOG(INFO) << "ExecuteDropTable" << std::endl;
 #endif
- return DB_FAILED;
+  if (current_db_.empty()) {
+    cout << "No database selected" << endl;
+    return DB_FAILED;
+  }
+  string table_name = ast->child_->val_;
+  if (dbs_[current_db_]->catalog_mgr_->DropTable(table_name) == DB_TABLE_NOT_EXIST) {
+    cout << "Table " + table_name + " doesn't exist" << endl;
+    return DB_FAILED;
+  }
+  cout << "Table " + table_name + " is dropped successfully" << endl;
+  return DB_SUCCESS;
 }
 
 /**
@@ -382,6 +477,9 @@ dberr_t ExecuteEngine::ExecuteDropIndex(pSyntaxNode ast, ExecuteContext *context
   return DB_FAILED;
 }
 
+/**
+ * 事务相关，暂不实现
+ */
 dberr_t ExecuteEngine::ExecuteTrxBegin(pSyntaxNode ast, ExecuteContext *context) {
 #ifdef ENABLE_EXECUTE_DEBUG
   LOG(INFO) << "ExecuteTrxBegin" << std::endl;
@@ -389,6 +487,9 @@ dberr_t ExecuteEngine::ExecuteTrxBegin(pSyntaxNode ast, ExecuteContext *context)
   return DB_FAILED;
 }
 
+/**
+ * 事务相关，暂不实现
+ */
 dberr_t ExecuteEngine::ExecuteTrxCommit(pSyntaxNode ast, ExecuteContext *context) {
 #ifdef ENABLE_EXECUTE_DEBUG
   LOG(INFO) << "ExecuteTrxCommit" << std::endl;
@@ -396,6 +497,9 @@ dberr_t ExecuteEngine::ExecuteTrxCommit(pSyntaxNode ast, ExecuteContext *context
   return DB_FAILED;
 }
 
+/**
+ * 事务相关，暂不实现
+ */
 dberr_t ExecuteEngine::ExecuteTrxRollback(pSyntaxNode ast, ExecuteContext *context) {
 #ifdef ENABLE_EXECUTE_DEBUG
   LOG(INFO) << "ExecuteTrxRollback" << std::endl;
@@ -413,12 +517,9 @@ dberr_t ExecuteEngine::ExecuteExecfile(pSyntaxNode ast, ExecuteContext *context)
   return DB_FAILED;
 }
 
-/**
- * TODO: Student Implement
- */
 dberr_t ExecuteEngine::ExecuteQuit(pSyntaxNode ast, ExecuteContext *context) {
 #ifdef ENABLE_EXECUTE_DEBUG
   LOG(INFO) << "ExecuteQuit" << std::endl;
 #endif
- return DB_FAILED;
+  return DB_QUIT;
 }
