@@ -44,21 +44,77 @@ TEST(TableHeapTest, TableHeapSampleTest) {
     }
     delete[] characters;
   }
-
   ASSERT_EQ(row_nums, row_values.size());
   ASSERT_EQ(row_nums, size);
+
+  // get rows
   for (auto row_kv : row_values) {
-    size--;
     Row row(RowId(row_kv.first));
     table_heap->GetTuple(&row, nullptr);
     ASSERT_EQ(schema.get()->GetColumnCount(), row.GetFields().size());
     for (size_t j = 0; j < schema.get()->GetColumnCount(); j++) {
       ASSERT_EQ(CmpBool::kTrue, row.GetField(j)->CompareEquals(row_kv.second->at(j)));
     }
-    // free spaces
+  }
+
+  // update rows
+  std::unordered_map<int64_t, Fields *> new_row_values;
+  for (auto row_kv : row_values) {
+    RowId row_id(row_kv.first);
+    int32_t len = RandomUtils::RandomInt(0, 64);
+    char *characters = new char[len];
+    RandomUtils::RandomString(characters, len);
+    Fields *fields =
+        new Fields{Field(TypeId::kTypeInt, RandomUtils::RandomInt(0, row_nums)), Field(TypeId::kTypeChar, const_cast<char *>(characters), len, true),
+                   Field(TypeId::kTypeFloat, RandomUtils::RandomFloat(-999.f, 999.f))};
+    Row row(*fields);
+    row.SetRowId(row_id);
+    ASSERT_TRUE(table_heap->UpdateTuple(row, row_id, nullptr));
+    if (new_row_values.find(row.GetRowId().Get()) != new_row_values.end()) {
+      std::cout << row.GetRowId().Get() << std::endl;
+      ASSERT_TRUE(false);
+    } else {
+      new_row_values.emplace(row.GetRowId().Get(), fields);
+    }
+    delete[] characters;
     delete row_kv.second;
   }
-  ASSERT_EQ(size, 0);
+
+  // get rows
+  ASSERT_EQ(row_nums, new_row_values.size());
+  for (auto row_kv : new_row_values) {
+    Row row(RowId(row_kv.first));
+    table_heap->GetTuple(&row, nullptr);
+    ASSERT_EQ(schema.get()->GetColumnCount(), row.GetFields().size());
+    for (size_t j = 0; j < schema.get()->GetColumnCount(); j++) {
+      ASSERT_EQ(CmpBool::kTrue, row.GetField(j)->CompareEquals(row_kv.second->at(j)));
+    }
+  }
+  
+  // delete rows
+  for (auto row_kv : new_row_values) {
+    RowId row_id(row_kv.first);
+    bool to_delete = RandomUtils::RandomInt(0, 1);
+    if (!to_delete) continue;
+    table_heap->ApplyDelete(row_id, nullptr);
+    delete row_kv.second;
+    new_row_values[row_kv.first] = nullptr;
+  }
+  for (auto row_kv : new_row_values) {
+    Row row(RowId(row_kv.first));
+    if (row_kv.second == nullptr) {
+      ASSERT_FALSE(table_heap->GetTuple(&row, nullptr));
+      continue;
+    }
+    table_heap->GetTuple(&row, nullptr);
+    ASSERT_EQ(schema.get()->GetColumnCount(), row.GetFields().size());
+    for (size_t j = 0; j < schema.get()->GetColumnCount(); j++) {
+      ASSERT_EQ(CmpBool::kTrue, row.GetField(j)->CompareEquals(row_kv.second->at(j)));
+    }
+    delete row_kv.second;
+  }
+  delete disk_mgr_;
+  remove(db_file_name.c_str());
 }
 
 TEST(TableHeapTest, TableIteratorTest) {
