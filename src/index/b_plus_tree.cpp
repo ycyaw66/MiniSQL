@@ -39,6 +39,11 @@ void BPlusTree::Destroy(page_id_t current_page_id) {
       Destroy(internal_page->ValueAt(i));
     }
   }
+  if (current_page_id == root_page_id_) {
+    auto root_page = reinterpret_cast<IndexRootsPage *>(buffer_pool_manager_->FetchPage(INDEX_ROOTS_PAGE_ID)->GetData());
+    root_page->Delete(index_id_);
+    buffer_pool_manager_->UnpinPage(INDEX_ROOTS_PAGE_ID, true);
+  }
   buffer_pool_manager_->UnpinPage(current_page_id, false);
   buffer_pool_manager_->DeletePage(current_page_id);
 }

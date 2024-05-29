@@ -160,8 +160,11 @@ dberr_t CatalogManager::CreateIndex(const std::string &table_name, const string 
   if (table_names_.find(table_name) == table_names_.end()) {
     return DB_TABLE_NOT_EXIST;
   }
-  if (index_names_.find(table_name) != index_names_.end() && index_names_[table_name].find(index_name) != index_names_[table_name].end()) {
-    return DB_INDEX_ALREADY_EXIST;
+  // 同一个数据库中不能有相同的index名，因此遍历所有的表的index名
+  for (auto iter : index_names_) {
+    if (iter.second.find(index_name) != iter.second.end()) {
+      return DB_INDEX_ALREADY_EXIST;
+    }
   }
   // 检查key是否存在
   auto schema = tables_[table_names_[table_name]]->GetSchema();
@@ -221,14 +224,20 @@ dberr_t CatalogManager::DropTable(const string &table_name) {
     return DB_TABLE_NOT_EXIST;
   }
   table_id_t table_id = table_names_[table_name];
+  // 删除table对应的index
+  std::vector<std::string> index_names;
+  for (auto iter : index_names_[table_name]) {
+    index_names.push_back(iter.first);
+  }
+  for (auto iter : index_names) {
+    DropIndex(table_name, iter);
+  }
   table_names_.erase(table_name);
+  TableInfo *table_info = tables_[table_id];
+  table_info->GetTableHeap()->FreeTableHeap();
   tables_.erase(table_id);
   buffer_pool_manager_->DeletePage(catalog_meta_->table_meta_pages_[table_id]);
   catalog_meta_->table_meta_pages_.erase(table_id);
-  // 删除table对应的index
-  for (auto iter : index_names_[table_name]) {
-    DropIndex(table_name, iter.first);
-  }
   return DB_SUCCESS;
 }
 
@@ -242,9 +251,10 @@ dberr_t CatalogManager::DropIndex(const string &table_name, const string &index_
   table_id_t table_id = table_names_[table_name];
   index_id_t index_id = index_names_[table_name][index_name];
   index_names_[table_name].erase(index_name);
+  IndexInfo *index_info = indexes_[index_id];
+  index_info->GetIndex()->Destroy();
   indexes_.erase(index_id);
-  buffer_pool_manager_->DeletePage(catalog_meta_->index_meta_pages_[index_id]);
-  catalog_meta_->index_meta_pages_.erase(index_id);
+  catalog_meta_->DeleteIndexMetaPage(buffer_pool_manager_, index_id);
   return DB_SUCCESS;
 }
 
