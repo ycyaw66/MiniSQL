@@ -27,15 +27,14 @@ ExecuteEngine::ExecuteEngine() {
   /** When you have completed all the code for
    *  the test, run it using main.cpp and uncomment
    *  this part of the code.
-  struct dirent *stdir;
-  while((stdir = readdir(dir)) != nullptr) {
-    if( strcmp( stdir->d_name , "." ) == 0 ||
-        strcmp( stdir->d_name , "..") == 0 ||
-        stdir->d_name[0] == '.')
-      continue;
-    dbs_[stdir->d_name] = new DBStorageEngine(stdir->d_name, false);
-  }
-   **/
+  **/
+  // struct dirent *stdir;
+  // while ((stdir = readdir(dir)) != nullptr) {
+  //   if (strcmp(stdir->d_name, ".") == 0 || strcmp(stdir->d_name, "..") == 0 || stdir->d_name[0] == '.') {
+  //     continue;
+  //   }
+  //   dbs_[stdir->d_name] = new DBStorageEngine(stdir->d_name, false);
+  // }
   closedir(dir);
 }
 
@@ -366,14 +365,15 @@ dberr_t ExecuteEngine::ExecuteCreateTable(pSyntaxNode ast, ExecuteContext *conte
     // 如果是column_definition，说明是column
     string column_name(column_definition_node->child_->val_);
     string column_type(column_definition_node->child_->next_->val_);
+    // 空值直接转会报错
     bool unique = false;
-    if (column_definition_node->val_ == "unique") {
+    if (column_definition_node->val_ != nullptr && string(column_definition_node->val_) == "unique") {
       unique = true;
     }
     if (column_type == "int") {
-      columns.push_back(new Column(column_name, kTypeInt, index++, false, unique));
+      columns.push_back(new Column(column_name, kTypeInt, index++, true, unique));
     } else if (column_type == "float") {
-      columns.push_back(new Column(column_name, kTypeFloat, index++, false, unique));
+      columns.push_back(new Column(column_name, kTypeFloat, index++, true, unique));
     } else if (column_type == "char") {
       string length(column_definition_node->child_->next_->child_->val_);
       // 检查length是否是非负整数
@@ -382,7 +382,7 @@ dberr_t ExecuteEngine::ExecuteCreateTable(pSyntaxNode ast, ExecuteContext *conte
         return DB_FAILED;
       }
       uint32_t len = stoi(length);
-      columns.push_back(new Column(column_name, kTypeChar, len, index++, false, unique));
+      columns.push_back(new Column(column_name, kTypeChar, len, index++, true, unique));
     } else {
       cout << "You have an error in your SQL syntax" << endl;
       return DB_FAILED;
@@ -412,11 +412,12 @@ dberr_t ExecuteEngine::ExecuteCreateTable(pSyntaxNode ast, ExecuteContext *conte
     for (int i = 0; i < columns.size(); i++) {
       if (columns[i]->GetName() == key) {
         found = true;
+        // 因为不支持not null语法，所以令主键为非空(nullable=false)，不是主键则为可空
         // 更新column的null属性，因为没有SetUnique函数，所以只能重新new一个
         if (columns[i]->GetType() == kTypeChar) {
-          columns[i] = new Column(columns[i]->GetName(), columns[i]->GetType(), columns[i]->GetLength(), columns[i]->GetTableInd(), true, columns[i]->IsUnique());
+          columns[i] = new Column(columns[i]->GetName(), columns[i]->GetType(), columns[i]->GetLength(), columns[i]->GetTableInd(), false, columns[i]->IsUnique());
         } else {
-          columns[i] = new Column(columns[i]->GetName(), columns[i]->GetType(), columns[i]->GetTableInd(), true, columns[i]->IsUnique());
+          columns[i] = new Column(columns[i]->GetName(), columns[i]->GetType(), columns[i]->GetTableInd(), false, columns[i]->IsUnique());
         }
         break;
       }
@@ -427,14 +428,9 @@ dberr_t ExecuteEngine::ExecuteCreateTable(pSyntaxNode ast, ExecuteContext *conte
     }
   }
   Schema *schema = new Schema(columns);
-  // 建表，并对primary key建索引
+  // 建表
   dbs_[current_db_]->catalog_mgr_->CreateTable(table_name, schema, context->GetTransaction(), table_info);
   cout << "Table " + table_name + " is created successfully" << endl;
-  if (!primary_keys.empty()) {
-    IndexInfo *index_info = nullptr;
-    dbs_[current_db_]->catalog_mgr_->CreateIndex(table_name, table_name + "_PRI_KEY_INDEX", primary_keys, context->GetTransaction(), index_info, "btree");
-    // cout << "Primary key index is created successfully" << endl;
-  }
   return DB_SUCCESS;
 }
 
@@ -543,6 +539,9 @@ dberr_t ExecuteEngine::ExecuteCreateIndex(pSyntaxNode ast, ExecuteContext *conte
     case DB_COLUMN_NAME_NOT_EXIST:
       cout << "Column not exists" << endl;
       return DB_FAILED;
+    case DB_FAILED:
+      cout << "Failed to create index" << endl;
+      return DB_FAILED;
   }
   return DB_SUCCESS;
 }
@@ -634,48 +633,49 @@ dberr_t ExecuteEngine::ExecuteExecfile(pSyntaxNode ast, ExecuteContext *context)
     cout << "Failed to open file: " << file_name << endl;
     return DB_FAILED;
   }
-
+  auto start_time = std::chrono::system_clock::now();
   char ch;
   std::string sql_statement;
   while (file.get(ch)) {
     if (ch == ';') {
-      if (!sql_statement.empty()) {
-      
-        // Parse and execute SQL statement
-        YY_BUFFER_STATE bp = yy_scan_string(sql_statement.c_str());
-        if (bp == nullptr) {
-          LOG(ERROR) << "Failed to create yy buffer state for SQL statement: " << sql_statement << std::endl;
-          continue;
-        }
-        yy_switch_to_buffer(bp);
-        
-        // init parser module
-        MinisqlParserInit();
-
-        // parse
-        yyparse();
-        
-        // parse result handle
-        auto result = Execute(MinisqlGetParserRootNode());
-        
-        // clean memory after parse
-        MinisqlParserFinish();
-        yy_delete_buffer(bp);
-        yylex_destroy();
-        
-        // quit condition
-        ExecuteInformation(result);
-        if (result == DB_QUIT) {
-          break;
-        }
-        sql_statement.clear();
+      sql_statement += ch;
+      // Parse and execute SQL statement
+      YY_BUFFER_STATE bp = yy_scan_string(sql_statement.c_str());
+      if (bp == nullptr) {
+        LOG(ERROR) << "Failed to create yy buffer state for SQL statement: " << sql_statement << std::endl;
+        continue;
       }
+      yy_switch_to_buffer(bp);
+      
+      // init parser module
+      MinisqlParserInit();
+
+      // parse
+      yyparse();
+      
+      // parse result handle
+      auto result = Execute(MinisqlGetParserRootNode());
+      
+      // clean memory after parse
+      MinisqlParserFinish();
+      yy_delete_buffer(bp);
+      yylex_destroy();
+      
+      // quit condition
+      ExecuteInformation(result);
+      if (result == DB_QUIT) {
+        break;
+      }
+      sql_statement.clear();
     } else {
       sql_statement += ch;
     }
   }
   file.close();  
-  
+  auto stop_time = std::chrono::system_clock::now();
+  double duration_time =
+      double((std::chrono::duration_cast<std::chrono::milliseconds>(stop_time - start_time)).count());
+  cout << "Query OK (" << fixed << setprecision(4) << duration_time / 1000 << " sec)." << endl;
   return DB_SUCCESS;
 }
 

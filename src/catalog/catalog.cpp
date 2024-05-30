@@ -135,6 +135,28 @@ dberr_t CatalogManager::CreateTable(const string &table_name, TableSchema *schem
   catalog_meta_->table_meta_pages_[table_id] = table_meta_page_id;
   table_names_[table_name] = table_id;
   tables_[table_id] = table_info;
+
+  // 对unique列建立index
+  std::vector<std::string> unique_columns;
+  for (auto column : schema->GetColumns()) {
+    if (column->IsUnique()) {
+      IndexInfo *index_info = nullptr;
+      unique_columns.clear();
+      unique_columns.push_back(column->GetName());
+      CreateIndex(table_name, table_name + "_" + column->GetName() + "_UNIQUE", unique_columns, txn, index_info, "btree");
+    }
+  }
+  // 对primary key建立index，nullable == false表示primary key
+  std::vector<std::string> primary_keys;
+  for (auto column : schema->GetColumns()) {
+    if (!column->IsNullable()) {
+      primary_keys.push_back(column->GetName());
+    }
+  }
+  if (!primary_keys.empty()) {
+    IndexInfo *index_info = nullptr;
+    CreateIndex(table_name, table_name + "_PRIMARY_KEY", primary_keys, txn, index_info, "btree");
+  }
   return DB_SUCCESS;
 }
 
@@ -192,6 +214,21 @@ dberr_t CatalogManager::CreateIndex(const std::string &table_name, const string 
   catalog_meta_->index_meta_pages_[index_id] = index_meta_page_id;
   index_names_[table_name].insert({index_name, index_id});
   indexes_[index_id] = index_info;
+
+  // 插入记录
+  auto table_info = tables_[table_id];
+  auto table_heap = table_info->GetTableHeap();
+  auto table_schema = table_info->GetSchema();
+  for (auto iter = table_heap->Begin(txn); iter != table_heap->End(); ++iter) {
+    Row insert_row = *iter;
+    Row key_row;
+    insert_row.GetKeyFromRow(table_schema, index_info->GetIndexKeySchema(), key_row);
+    dberr_t result = index_info->GetIndex()->InsertEntry(key_row, insert_row.GetRowId(), txn);
+    if (result == DB_FAILED) {
+      DropIndex(table_name, index_name);
+      return DB_FAILED;
+    }
+  }
   return DB_SUCCESS;
 }
 

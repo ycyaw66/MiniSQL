@@ -21,6 +21,7 @@ bool InsertExecutor::Next([[maybe_unused]] Row *row, RowId *rid) {
   if (child_executor_->Next(&insert_row, &insert_rid)) {
     if (table_info_->GetTableHeap()->InsertTuple(insert_row, exec_ctx_->GetTransaction())) {
       Row key_row;
+      insert_rid = insert_row.GetRowId();
       for (auto info : index_info_) {  // 更新索引
         insert_row.GetKeyFromRow(schema_, info->GetIndexKeySchema(), key_row);
         info->GetIndex()->InsertEntry(key_row, insert_rid, exec_ctx_->GetTransaction());
