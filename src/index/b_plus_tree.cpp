@@ -32,6 +32,9 @@ void BPlusTree::Destroy(page_id_t current_page_id) {
   if (current_page_id == INVALID_PAGE_ID) {
     current_page_id = root_page_id_;
   }
+  if (current_page_id == INVALID_PAGE_ID) {
+    return;
+  }
   auto page = reinterpret_cast<BPlusTreePage *>(buffer_pool_manager_->FetchPage(current_page_id)->GetData());
   if (!page->IsLeafPage()) {
     auto internal_page = reinterpret_cast<InternalPage *>(buffer_pool_manager_->FetchPage(current_page_id)->GetData());

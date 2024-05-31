@@ -19,6 +19,17 @@ bool InsertExecutor::Next([[maybe_unused]] Row *row, RowId *rid) {
   Row insert_row;
   RowId insert_rid;
   if (child_executor_->Next(&insert_row, &insert_rid)) {
+    // 先扫描index，确保插入记录在任意一个index中不存在
+    for (auto info : index_info_) {
+      Row key_row;
+      insert_row.GetKeyFromRow(schema_, info->GetIndexKeySchema(), key_row);
+      vector<RowId> result;
+      info->GetIndex()->ScanKey(key_row, result, exec_ctx_->GetTransaction(), "=");
+      if (!result.empty()) {
+        cout << "Duplicate key found in index " << info->GetIndexName() << endl;
+        return false;
+      }
+    }
     if (table_info_->GetTableHeap()->InsertTuple(insert_row, exec_ctx_->GetTransaction())) {
       Row key_row;
       insert_rid = insert_row.GetRowId();
