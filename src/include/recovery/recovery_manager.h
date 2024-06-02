@@ -22,20 +22,83 @@ struct CheckPoint {
 
 class RecoveryManager {
  public:
-  /**
-  * TODO: Student Implement
-  */
-  void Init(CheckPoint &last_checkpoint) {}
+  
+  void Init(CheckPoint &last_checkpoint) {
+    persist_lsn_ = last_checkpoint.checkpoint_lsn_;
+    active_txns_ = last_checkpoint.active_txns_;
+    data_ = last_checkpoint.persist_data_;
+  }
 
   /**
-  * TODO: Student Implement
+  * 执行全部日志记录，恢复数据库
   */
-  void RedoPhase() {}
+  void RedoPhase() {
+    for (auto iter = log_recs_.begin(); iter != log_recs_.end(); ++iter) {
+      if (iter->first < persist_lsn_) {
+        continue;
+      }
+      LogRecPtr log_rec = iter->second;
+      active_txns_[log_rec->txn_id_] = log_rec->lsn_;
+      switch (log_rec->type_) {
+        case LogRecType::kInsert:
+          data_[log_rec->ins_key_] = log_rec->ins_val_;
+          break;
+        case LogRecType::kDelete:
+          data_.erase(log_rec->del_key_);
+          break;
+        case LogRecType::kUpdate:
+          data_.erase(log_rec->old_key_);
+          data_[log_rec->new_key_] = log_rec->new_val_;
+          break;
+        case LogRecType::kBegin:
+          break;
+        case LogRecType::kCommit:
+          active_txns_.erase(log_rec->txn_id_);
+          break;
+        case LogRecType::kAbort:
+          Rollback(log_rec->txn_id_);
+          active_txns_.erase(log_rec->txn_id_);
+          break;
+        default:
+          break;
+      }
+    }
+  }
 
   /**
-  * TODO: Student Implement
+  * 撤销全部日志记录，恢复数据库
   */
-  void UndoPhase() {}
+  void UndoPhase() {
+    for (auto iter : active_txns_) {
+      Rollback(iter.first);
+    }
+    active_txns_.clear();
+  }
+
+  /**
+  * 回滚一个事务
+  */
+  void Rollback(txn_id_t txn_id) {
+    lsn_t now_lsn = active_txns_[txn_id];
+    while (now_lsn != INVALID_LSN) {
+      LogRecPtr log_rec = log_recs_[now_lsn];
+      switch (log_rec->type_) {
+        case LogRecType::kInsert:
+          data_.erase(log_rec->ins_key_);
+          break;
+        case LogRecType::kDelete:
+          data_[log_rec->del_key_] = log_rec->del_val_;
+          break;
+        case LogRecType::kUpdate:
+          data_.erase(log_rec->new_key_);
+          data_[log_rec->old_key_] = log_rec->old_val_;
+          break;
+        default:
+          break;
+      }
+      now_lsn = log_rec->prev_lsn_;
+    }
+  }
 
   // used for test only
   void AppendLogRec(LogRecPtr log_rec) { log_recs_.emplace(log_rec->lsn_, log_rec); }

@@ -58,7 +58,6 @@ Page *BufferPoolManager::FetchPage(page_id_t page_id) {
   page->page_id_ = page_id;
   replacer_->Pin(frame_id);
   page->pin_count_++;
-  LOG(INFO) << "Fetch page " << page_id << " to frame " << frame_id << endl;
   disk_manager_->ReadPage(page_id, page->GetData());
   return page;
 }
