@@ -73,6 +73,7 @@ TEST(BPlusTreeTests, BPlusTreeIndexSimpleTest) {
     ASSERT_EQ(i, (*iter).second.GetSlotNum());
     i++;
   }
+  index->Destroy();
   delete index;
   delete bpm_;
   delete disk_mgr_;
