@@ -202,12 +202,12 @@ void LockManager::RunCycleDetection() {
     // 每次唤醒时即时构建和销毁图表，而不是维护图表
     waits_for_.clear();
     for (auto &[row_id, req_queue] : lock_table_) {
-      // 根据没锁但在request，向有锁的连边
+      // 根据没锁但在request，向有锁的连边，都是共享锁不连边
       for (const auto &[row_id, lock_req_queue] : lock_table_) {
         for (const auto &lock_req : lock_req_queue.req_list_) {
           if (lock_req.granted_ == LockMode::kNone) {
             for (const auto &neighbor_lock_req : lock_req_queue.req_list_) {
-              if (neighbor_lock_req.granted_ != LockMode::kNone) {
+              if (neighbor_lock_req.granted_ != LockMode::kNone && !(lock_req.lock_mode_ == LockMode::kShared && neighbor_lock_req.lock_mode_ == LockMode::kShared)) {
                 AddEdge(lock_req.txn_id_, neighbor_lock_req.txn_id_);
               }
             }
