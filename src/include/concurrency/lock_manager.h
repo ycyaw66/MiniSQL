@@ -104,23 +104,22 @@ class LockManager {
    * @param rid the RID to be locked in shared mode
    * @return true if the lock is granted, false otherwise
    */
-
   bool LockShared(Txn *txn, const RowId &rid);
+
   /**
    * Acquire a lock on RID in exclusive mode. See [LOCK_NOTE] in header file.
    * @param txn the transaction requesting the exclusive lock
    * @param rid the RID to be locked in exclusive mode
    * @return true if the lock is granted, false otherwise
    */
-
   bool LockExclusive(Txn *txn, const RowId &rid);
+
   /**
    * Upgrade a lock from a shared lock to an exclusive lock.
    * @param txn the transaction requesting the lock upgrade
    * @param rid the RID that should already be locked in shared mode by the requesting transaction
    * @return true if the upgrade is successful, false otherwise
    */
-
   bool LockUpgrade(Txn *txn, const RowId &rid);
 
   /**
@@ -146,6 +145,8 @@ class LockManager {
    *  return the first cycle it finds. If your graph has no cycles, HasCycle should return false.
    */
   bool HasCycle(txn_id_t &newest_tid_in_cycle);
+
+  bool dfs(txn_id_t txn_id);
 
   void DeleteNode(txn_id_t txn_id);
 
